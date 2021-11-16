@@ -22,4 +22,7 @@ public class UserService {
     public boolean existsByEmail(String email){
         return userRepository.existsByEmail(email);
     }
+    public User findById(int id){
+        return userRepository.findById(id).get();
+    }
 }

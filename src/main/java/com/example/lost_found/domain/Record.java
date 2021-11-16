@@ -1,5 +1,7 @@
 package com.example.lost_found.domain;
 
+import java.time.LocalDate;
+
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
@@ -18,13 +20,19 @@ public class Record {
     private String email;
     @Enumerated(EnumType.STRING)
     private RecordStatus recordStatus;
+    private LocalDate dateOfSubmission;
 
-    public Record(String cardNumber, String nameOfbearer, String telephone,String email, RecordStatus recordStatus) {
+    public Record(String cardNumber, String nameOfbearer, String telephone,String email, RecordStatus recordStatus, LocalDate dateOfSubmission) {
         this.cardNumber = cardNumber;
         this.nameOfBearer = nameOfbearer;
         this.telephone = telephone;
         this.email = email;
         this.recordStatus = recordStatus;
+        this.dateOfSubmission = dateOfSubmission;
+    }
+
+    public Record() {
+        super();
     }
 
     public void setCardNumber(String cardNumber) {
@@ -45,6 +53,9 @@ public class Record {
     public void setTelephone(String telephone) {
         this.telephone = telephone;
     }
+    public void setDateOfSubmission(LocalDate dateOfSubmission) {
+        this.dateOfSubmission = dateOfSubmission;
+    }
     public String getCardNumber() {
         return cardNumber;
     }
@@ -62,5 +73,8 @@ public class Record {
     }
     public String getTelephone() {
         return telephone;
+    }
+    public LocalDate getDateOfSubmission() {
+        return dateOfSubmission;
     }
 }

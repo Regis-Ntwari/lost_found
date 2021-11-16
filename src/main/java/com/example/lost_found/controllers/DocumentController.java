@@ -14,6 +14,7 @@ import com.example.lost_found.services.DocumentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @CrossOrigin(origins = "*")
 @RequestMapping("/api/document")
+@PreAuthorize("hasAuthority('STAFF')")
 public class DocumentController {
     @Autowired
     private DocumentService documentService;
@@ -51,7 +53,7 @@ public class DocumentController {
         return new ResponseEntity<>(HttpStatus.CREATED);
     }
 
-    @GetMapping()
+    @GetMapping("/issue")
     public ResponseEntity<?> issueDocument(@RequestParam int id){
         Document document = documentService.findById(id);
         if(document == null){
@@ -65,21 +67,15 @@ public class DocumentController {
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
-    @GetMapping()
+    @GetMapping("/find")
     public ResponseEntity<?> findDocumentByRefNumber(@RequestParam String refNumber){
         Document document = documentService.findByRefNumber(refNumber);
-        if(document == null){
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
         return ResponseEntity.ok(document);
     }
 
-    @GetMapping()
+    @GetMapping("/name")
     public ResponseEntity<?> findDocumentsByBearerName(@RequestParam String bearerName){
         List<Document> documents = documentService.findByBearerName(bearerName);
-        if(documents.isEmpty()){
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
         return ResponseEntity.ok(documents);
     }
 }

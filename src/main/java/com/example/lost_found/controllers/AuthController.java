@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import javax.validation.Valid;
+
 import com.example.lost_found.domain.Role;
 import com.example.lost_found.domain.User;
 import com.example.lost_found.domain.UserStatus;
@@ -18,16 +20,20 @@ import com.example.lost_found.services.UserDetailsImplementation;
 import com.example.lost_found.services.UserService;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -63,13 +69,20 @@ public class AuthController {
         List<String> roles = userDetails.getAuthorities().stream().map(role -> role.getAuthority())
                                         .collect(Collectors.toList());
 
+        User loggedInUser = userService.findById(userDetails.getId());
+        if(loggedInUser.getUserStatus().name().equals("DISABLED")){
+            SecurityContextHolder.clearContext();
+            return ResponseEntity.badRequest().body(new String("Your account has been disabled"));
+        }
+
         return ResponseEntity.ok(
             new ResponseSignIn(jwt, userDetails.getId(), userDetails.getUsername(), userDetails.getEmail(), roles)
         );
     }
 
     @PostMapping("/signup/customer")
-    public ResponseEntity<?> registerSimpleUser(@RequestBody SignUpRequest user){
+    public ResponseEntity<?> registerSimpleUser(@Valid @RequestBody SignUpRequest user){
+        System.out.println(user);
         if(userService.existsByUsername(user.getUsername())){
             return ResponseEntity.badRequest().body(new String("Username exists"));
         }
@@ -96,7 +109,7 @@ public class AuthController {
     }
 
     @PostMapping("/signup/staff")
-    public ResponseEntity<?> registerStaffUser(@RequestBody SignUpRequest user){
+    public ResponseEntity<?> registerStaffUser(@Valid @RequestBody SignUpRequest user){
         if(userService.existsByUsername(user.getUsername())){
             return ResponseEntity.badRequest().body(new String("Username exists"));
         }
@@ -106,7 +119,7 @@ public class AuthController {
 
         User newUser = new User(
             user.getUsername(), 
-            user.getPassword(), 
+            encoder.encode(user.getPassword()), 
             user.getEmail(), 
             user.getPhoneNumber(), 
             UserStatus.ACTIVE);
@@ -120,5 +133,24 @@ public class AuthController {
         newUser.setRoles(roles);
 
         return ResponseEntity.ok(userService.saveUser(newUser));
+    }
+    @GetMapping("/disable")
+    @PreAuthorize("hasAuthority('STAFF')")
+    public ResponseEntity<?> disableCustomer(@RequestParam int id){
+        User user = userService.findById(id);
+        if(user == null){
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+        if(user.getRoles().contains(new Role(UserType.STAFF))){
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        user.setUserStatus(UserStatus.DISABLED);
+        return ResponseEntity.ok(userService.saveUser(user));
+    }
+
+    @GetMapping("/logout")
+    public String logout(){
+        SecurityContextHolder.clearContext();
+        return "Successfully logged out";
     }
 }
